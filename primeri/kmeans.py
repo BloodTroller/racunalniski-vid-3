@@ -23,7 +23,7 @@ def kmeans(slika, k=3, iteracije=10):
     return segmentirana_slika
 
 if __name__ == "__main__":
-    k = 3
+    k = 1
     iteracije = 100
     slika = cv.imread("../.utils/lenna.png")
     slika = cv.resize(slika, (128, 128))

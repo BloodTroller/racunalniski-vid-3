@@ -1,4 +1,5 @@
 import math
+import random
 import sys
 import time
 import warnings
@@ -7,6 +8,19 @@ import numba
 from numba import jit
 import cv2 as cv
 import numpy as np
+
+
+def dist(color1, color2):
+    difs = []
+
+    for i in range(len(color1)):
+        c1 = color1[i]
+        c2 = color2[i]
+        squared_difference = (c1 - c2) ** 2
+        difs.append(squared_difference)
+
+    distance = math.sqrt(sum(difs))
+    return distance
 
 def kmeans(slika, centers, num=3, iteracije=10):
     print(centers)
@@ -82,6 +96,7 @@ def kmeans(slika, centers, num=3, iteracije=10):
         for yy in range(height):
             output[yy, xx][0] = centers[cores[xx, yy]][0]
             output[yy, xx][1] = centers[cores[xx, yy]][1]
+            output[yy, xx][2] = centers[cores[xx, yy]][2]
 
     return output
 
@@ -90,6 +105,10 @@ def meanshift(slika, velikost_okna, dimenzija):
     '''Izvede segmentacijo slike z uporabo metode mean-shift.'''
 
     pass
+
+
+def c():
+    return random.randint(0, 255)
 
 
 def izracunaj_centre(slika, n=1, big_array=False, manual=True, t=5):
@@ -124,13 +143,22 @@ def izracunaj_centre(slika, n=1, big_array=False, manual=True, t=5):
 
         cv.destroyWindow("centres")
     else:
-        pass
+
+        colors = []
+
+        while len(colors) < n:
+            new = [c(), c(), c()]
+            if all(dist(new, color) >= t for color in colors):
+                colors.append(new)
+
+        return colors
+
     return centre
 
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    k = 5
+    k = 3
     iteracije = 3
     slika = cv.imread("./.utils/lenna.png")
     slika = cv.imread("./.utils/variety-of-peppers.png")
@@ -138,7 +166,8 @@ if __name__ == "__main__":
 
     # slika = cv.resize(slika, (500, 350))
 
-    segmentirana_slika = kmeans(slika, izracunaj_centre(slika, k, True), k, iteracije)
+    segmentirana_slika = kmeans(slika, izracunaj_centre(slika, k, False, True, 1), k, iteracije)
+    # segmentirana_slika = kmeans(slika, izracunaj_centre(slika, k, False, False, 1), k, iteracije)
 
     cv.setWindowTitle("slika", "Normalna slika")
     cv.imshow("slika", slika)
