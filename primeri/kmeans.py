@@ -24,7 +24,7 @@ def kmeans(slika, k=3, iteracije=10):
 
 if __name__ == "__main__":
     k = 3
-    iteracije = 10
+    iteracije = 100
     slika = cv.imread("../.utils/lenna.png")
     segmentirana_slika = kmeans(slika,k,iteracije)
     
