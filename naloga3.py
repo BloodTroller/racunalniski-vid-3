@@ -3,13 +3,14 @@ import random
 import sys
 import time
 import warnings
-
+from scipy.ndimage import gaussian_filter
 import numba
 from numba import jit
 import cv2 as cv
 import numpy as np
 
 
+@jit(nopython=True)
 def dist(color1, color2):
     difs = []
 
@@ -21,6 +22,7 @@ def dist(color1, color2):
 
     distance = math.sqrt(sum(difs))
     return distance
+
 
 def kmeans(slika, centers, num=3, iteracije=10):
     print(centers)
@@ -74,8 +76,8 @@ def kmeans(slika, centers, num=3, iteracije=10):
                 nums[centre_index][1] += s
                 nums[centre_index][2] += v
                 if is_big:
-                    nums[centre_index][3] += x
-                    nums[centre_index][4] += y
+                    nums[centre_index][3] += x2
+                    nums[centre_index][4] += y2
                 divider[centre_index] += 1
 
         for j in range(num):
@@ -101,14 +103,12 @@ def kmeans(slika, centers, num=3, iteracije=10):
     return output
 
 
-def meanshift(slika, velikost_okna, dimenzija):
-    '''Izvede segmentacijo slike z uporabo metode mean-shift.'''
-
-    pass
-
-
-def c():
+def rng_c():
     return random.randint(0, 255)
+
+
+def rng_xy(size):
+    return random.randint(0, size - 1)
 
 
 def izracunaj_centre(slika, n=1, big_array=False, manual=True, t=5):
@@ -142,12 +142,30 @@ def izracunaj_centre(slika, n=1, big_array=False, manual=True, t=5):
                 centre.append([h, s, v])
 
         cv.destroyWindow("centres")
-    else:
+    elif big_array:
+        colors = []
+        distances = []
+        output = []
 
+        while len(colors) < n:
+            new = [rng_c(), rng_c(), rng_c()]
+            n1 = rng_xy(slika.shape[1])
+            n2 = rng_xy(slika.shape[0])
+            new2 = [n1, n2]
+            new3 = new.copy()
+            new3.append(n1)
+            new3.append(n2)
+            if all(dist(new, color) >= t for color in colors) and all(
+                    dist(new2, distance) >= t for distance in distances):
+                colors.append(new)
+                distances.append(new2)
+                output.append(new3)
+        return output
+    else:
         colors = []
 
         while len(colors) < n:
-            new = [c(), c(), c()]
+            new = [rng_c(), rng_c(), rng_c()]
             if all(dist(new, color) >= t for color in colors):
                 colors.append(new)
 
@@ -156,25 +174,59 @@ def izracunaj_centre(slika, n=1, big_array=False, manual=True, t=5):
     return centre
 
 
+def meanshift(slika, h, big_array=False, sigma=1.5, max_iteracije=10, m=0.02, dimeznija=3):
+    '''Izvede segmentacijo slike z uporabo metode mean-shift.'''
+    output = slika.copy()
+    height, width = slika.shape[:2]
+    for x in range(height):
+        for y in range(width):
+            iteracija = 0
+            konvergenca = False
+            while not konvergenca and iteracija < max_iteracije:
+                print("(", x, ",", y, ") Iteracija:", iteracija, "\n")
+                tocka = output[x, y]
+                razdalje = np.zeros((height, width))
+                razdalje.fill(-1)
+                # razdalje = izracunaj_razdaljo(tocka, vse_tocke)
+                for x2 in range(height):
+                    for y2 in range(width):
+                        razdalje[x2, y2] = dist(output[x2, y2], tocka)
+                # jedro(razdalje, h)
+                utezi = (1 / (h * math.sqrt(2 * math.pi))) * np.exp(-1 / 2 * pow((razdalje / h), 2))
+                # nova_tocka = sum(utezi * slika[x, y]) / sum(utezi)
+                nova_tocka = np.sum(utezi[..., np.newaxis] * slika, axis=(0, 1)) / np.sum(utezi)
+                konvergenca = dist(nova_tocka, tocka) < m
+                output[x, y] = nova_tocka
+                iteracija += 1
+    return output
+
+
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    k = 3
+    k = 10
     iteracije = 3
-    slika = cv.imread("./.utils/lenna.png")
-    slika = cv.imread("./.utils/variety-of-peppers.png")
+    slika = cv.imread("./.utils/paprika.jpg")
+    h, w = slika.shape[:2]
+    # slika = cv.imread("./.utils/variety-of-peppers.png")
     # cv.cvtColor(slika, cv.COLOR_BGR2HSV)
 
     # slika = cv.resize(slika, (500, 350))
 
-    segmentirana_slika = kmeans(slika, izracunaj_centre(slika, k, False, True, 1), k, iteracije)
-    # segmentirana_slika = kmeans(slika, izracunaj_centre(slika, k, False, False, 1), k, iteracije)
+    sslika = kmeans(slika, izracunaj_centre(slika, k, True, False, 1), k, iteracije)
+    # sslika = kmeans(slika, izracunaj_centre(slika, k, False, False, 1), k, iteracije)
+    #
+    # slika = cv.resize(slika, (64, 64))
+    # sslika = meanshift(slika, 1)
+    #
+    # slika = cv.resize(slika, (h, w))
+    # sslika = cv.resize(sslika, (h, w))
 
     cv.setWindowTitle("slika", "Normalna slika")
     cv.imshow("slika", slika)
     cv.waitKey(0)
 
-    cv.setWindowTitle("slika", "Slika obdealana s KMEANS algoritmom")
-    cv.imshow("slika", segmentirana_slika)
+    cv.setWindowTitle("slika", "Slika obdealana z algoritmom")
+    cv.imshow("slika", sslika)
     cv.waitKey(0)
 
     cv.destroyAllWindows()
