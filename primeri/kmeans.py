@@ -26,7 +26,8 @@ if __name__ == "__main__":
     k = 3
     iteracije = 100
     slika = cv.imread("../.utils/lenna.png")
-    segmentirana_slika = kmeans(slika,k,iteracije)
+    slika = cv.resize(slika, (128, 128))
+    segmentirana_slika = kmeans(slika, k, iteracije)
     
     cv.imshow("K-means s {} centri (BGR)", segmentirana_slika)
     cv.waitKey(0)

@@ -8,7 +8,6 @@ from numba import jit
 import cv2 as cv
 import numpy as np
 
-
 def kmeans(slika, centers, num=3, iteracije=10):
     print(centers)
     print("\n")
@@ -17,8 +16,6 @@ def kmeans(slika, centers, num=3, iteracije=10):
         return slika
 
     output = slika.copy()
-    vis = output.shape[0]
-    sir = output.shape[1]
     data_size = len(centers[0])
     if data_size == 5:
         is_big = True
@@ -35,10 +32,10 @@ def kmeans(slika, centers, num=3, iteracije=10):
         print("Iteracija: " + str(it + 1) + "\n")
         divider = [0] * num
         # dtype=numba.int64
-        nums = np.zeros((data_size, data_size), dtype=int)
+        nums = np.zeros((num, data_size), dtype=int)
         for x in range(width):
             for y in range(height):
-                h, s, v = slika[x, y]
+                h, s, v = slika[y, x]
                 centre_index = -1
                 previous_distance = sys.maxsize
                 for i in range(num):
@@ -62,6 +59,9 @@ def kmeans(slika, centers, num=3, iteracije=10):
                 nums[centre_index][0] += h
                 nums[centre_index][1] += s
                 nums[centre_index][2] += v
+                if is_big:
+                    nums[centre_index][3] += x
+                    nums[centre_index][4] += y
                 divider[centre_index] += 1
 
         for j in range(num):
@@ -80,14 +80,15 @@ def kmeans(slika, centers, num=3, iteracije=10):
 
     for xx in range(width):
         for yy in range(height):
-            output[xx, yy][0] = centers[cores[xx, yy]][0]
-            output[xx, yy][0] = centers[cores[xx, yy]][1]
+            output[yy, xx][0] = centers[cores[xx, yy]][0]
+            output[yy, xx][1] = centers[cores[xx, yy]][1]
 
     return output
 
 
 def meanshift(slika, velikost_okna, dimenzija):
     '''Izvede segmentacijo slike z uporabo metode mean-shift.'''
+
     pass
 
 
@@ -129,14 +130,15 @@ def izracunaj_centre(slika, n=1, big_array=False, manual=True, t=5):
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    k = 3
-    iteracije = 2
-    slika = cv.imread(".utils/lenna.png")
+    k = 5
+    iteracije = 3
+    slika = cv.imread("./.utils/lenna.png")
+    slika = cv.imread("./.utils/variety-of-peppers.png")
     # cv.cvtColor(slika, cv.COLOR_BGR2HSV)
 
-    # slika = cv.resize(slika, (32, 32))
+    # slika = cv.resize(slika, (500, 350))
 
-    segmentirana_slika = kmeans(slika, izracunaj_centre(slika, k, False), k, iteracije)
+    segmentirana_slika = kmeans(slika, izracunaj_centre(slika, k, True), k, iteracije)
 
     cv.setWindowTitle("slika", "Normalna slika")
     cv.imshow("slika", slika)
