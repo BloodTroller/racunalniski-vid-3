@@ -8,7 +8,8 @@ from numba import jit
 import cv2 as cv
 import numpy as np
 
-def kmeans(slika, og_centers, num, k=3, iteracije=10):
+def kmeans(slika, centers, num, k=3, iteracije=10):
+    print(centers)
     '''Izvede segmentacijo slike z uporabo metode k-means.'''
     if k < 1 or iteracije < 1:
         return slika
@@ -16,7 +17,6 @@ def kmeans(slika, og_centers, num, k=3, iteracije=10):
     output = slika.copy()
     vis = output.shape[0]
     sir = output.shape[1]
-    centers = og_centers.copy()
     data_size = len(centers[0])
     height, width = slika.shape[:2]
     #dtype=numba.int64
@@ -25,7 +25,7 @@ def kmeans(slika, og_centers, num, k=3, iteracije=10):
     for it in range(iteracije):
         divider = [0] * num
         # dtype=numba.int64
-        nums = np.zeros((data_size, num), dtype=int)
+        nums = np.zeros((data_size, data_size), dtype=int)
         for x in range(width):
             for y in range(height):
                 h, s, v = slika[x, y]
@@ -45,11 +45,23 @@ def kmeans(slika, og_centers, num, k=3, iteracije=10):
                 nums[centre_index][2] += v
                 divider[centre_index] += 1
 
+        insufficient_movement = False
         for j in range(num):
             if divider[j] > 0:
                 nums[j][0] /= divider[j]
                 nums[j][1] /= divider[j]
                 nums[j][2] /= divider[j]
+                mh = nums[j][0]
+                ms = nums[j][1]
+                mv = nums[j][2]
+                ph, ps, pv = centers[j]
+                centers[j] = (mh, ms, mv)
+
+            if (math.sqrt((mh - ph) ** 2 + (ms - ps) ** 2 + (mv - pv) ** 2)) < k:
+                insufficient_movement = True
+
+        if insufficient_movement:
+            break
 
     for xx in range(width):
         for yy in range(height):
@@ -79,8 +91,8 @@ def izracunaj_centre(slika, n=1, manual=True, t=5, big_array=False):
                     nonlocal a
                     nonlocal b
                     nonlocal title
-                    a = x
-                    b = y
+                    b = x
+                    a = y
                     cv.setWindowTitle("centres", title + " (" + str(x) + ", " + str(y) + ")")
 
             cv.imshow("centres", slika)
@@ -101,13 +113,14 @@ def izracunaj_centre(slika, n=1, manual=True, t=5, big_array=False):
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     k = 3
-    iteracije = 10
+    ccount = 3
+    iteracije = 1
     slika = cv.imread(".utils/lenna.png")
-    cv.cvtColor(slika, cv.COLOR_BGR2HSV)
+    # cv.cvtColor(slika, cv.COLOR_BGR2HSV)
 
     # slika = cv.resize(slika, (32, 32))
 
-    segmentirana_slika = kmeans(slika, izracunaj_centre(slika, 3), 3, k, iteracije)
+    segmentirana_slika = kmeans(slika, izracunaj_centre(slika, ccount), ccount, k, iteracije)
 
     cv.setWindowTitle("slika", "Normalna slika")
     cv.imshow("slika", slika)
