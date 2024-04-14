@@ -93,7 +93,7 @@ def kmeans(slika, centers, num=3, iteracije=10):
                     centers[j] = (mh, ms, mv, mx, my)
                 else:
                     centers[j] = (mh, ms, mv)
-
+                    
     for xx in range(width):
         for yy in range(height):
             output[yy, xx][0] = centers[cores[xx, yy]][0]
@@ -203,17 +203,24 @@ def meanshift(slika, h, big_array=False, sigma=1.5, max_iteracije=10, m=0.02, di
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    k = 10
-    iteracije = 3
-    slika = cv.imread("./.utils/paprika.jpg")
+    k = 5
+    iteracije = 1
+    slika = cv.imread("./.utils/zelenjava.jpg")
     h, w = slika.shape[:2]
     # slika = cv.imread("./.utils/variety-of-peppers.png")
     # cv.cvtColor(slika, cv.COLOR_BGR2HSV)
 
     # slika = cv.resize(slika, (500, 350))
 
-    sslika = kmeans(slika, izracunaj_centre(slika, k, True, False, 1), k, iteracije)
-    # sslika = kmeans(slika, izracunaj_centre(slika, k, False, False, 1), k, iteracije)
+    izbrane_barve = [[0, 0, 0], [255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 255]]
+    centri_za_papriko3 = [[47, 16, 197], [16, 185, 246], [30, 128, 235], [71, 137, 108], [255, 255, 255]]
+    centri_za_papriko5 = [[47, 16, 197, 474, 212], [16, 185, 246, 214, 281], [30, 128, 235, 15, 922],
+                          [71, 137, 108, 614, 777], [255, 255, 255, 64, 1198]]
+    sslika = kmeans(slika, izbrane_barve, k, iteracije)
+    # sslika = kmeans(slika, centri_za_papriko5, k, iteracije)
+    # sslika = kmeans(slika, izracunaj_centre(slika, k, False, True, 1), k, iteracije)
+    # sslika = kmeans(slika, izracunaj_centre(slika, k, False, False, 10), k, iteracije)
+
     #
     # slika = cv.resize(slika, (64, 64))
     # sslika = meanshift(slika, 1)
